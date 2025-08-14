@@ -1,0 +1,57 @@
+	}
+	.dashboard-box .badge {
+		font-size: 1em;
+		padding: 0.5em 0.8em;
+		background: #0d6efd;
+		color: #fff;
+		border-radius: 1em;
+	}
+	.dashboard-box .stat-label {
+		font-size: 1em;
+		color: #222;
+		font-weight: 600;
+		margin-right: 0.5rem;
+	}
+	}
+	.container {
+		padding: 0.5rem !important;
+	}
+	h1 {
+		font-size: 1.3rem;
+	}
+	.card {
+		min-width: 0;
+		box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+	}
+	.card-img-top {
+		max-height: 140px;
+	}
+	.card-body {
+		padding: 0.75rem;
+	}
+	.badge {
+		font-size: 0.85em;
+	}
+	.form-label, .form-control, .form-select {
+		font-size: 0.95em;
+	}
+}
+body { background: #f8f9fa; }
+.card {
+	box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+.card-img-top {
+	object-fit: cover;
+	width: 100%;
+	max-height: 220px;
+}
+.card-body {
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-end;
+	flex: 1 1 auto;
+}
+.badge { font-size: 0.95em; }
