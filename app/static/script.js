@@ -1,125 +1,15 @@
-document.addEventListener('DOMContentLoaded', () => {
-  const form = document.getElementById('videoForm');
-  const categoriasSelect = document.getElementById('categorias');
-  const nuevaCategoriaInput = document.getElementById('nuevaCategoria');
-  const videosList = document.getElementById('videosList');
-  const filtroCategoria = document.getElementById('filtroCategoria');
-  const formContainer = document.getElementById('formContainer');
-  const toggleFormBtn = document.getElementById('toggleFormBtn');
-  let categorias = [];
-  let videos = [];
-  let formVisible = true;
-
-  function cargarCategorias() {
-    fetch('/categorias').then(r => r.json()).then(data => {
-      categorias = data;
-      categoriasSelect.innerHTML = '';
-      filtroCategoria.innerHTML = '<option value="">Todas</option>';
-      categorias.forEach(cat => {
-        const opt = document.createElement('option');
-        opt.value = cat;
-        opt.textContent = cat;
-        categoriasSelect.appendChild(opt);
-        const filtroOpt = document.createElement('option');
-        filtroOpt.value = cat;
-        filtroOpt.textContent = cat;
-        filtroCategoria.appendChild(filtroOpt);
-      });
-    });
-  }
-
-  function cargarVideos() {
-    fetch('/videos').then(r => r.json()).then(data => {
-      videos = data;
-      mostrarVideos();
-    });
-  }
-
-  function mostrarVideos() {
-    const filtro = filtroCategoria.value;
-    videosList.innerHTML = '';
-    videos.filter(v => !filtro || v.categorias.split(',').includes(filtro)).forEach(video => {
-      const col = document.createElement('div');
-      col.className = 'col-md-6 col-lg-4';
-      col.innerHTML = `
-        <div class="card h-100">
-          <img src="${video.miniatura_url}" class="card-img-top" alt="Miniatura">
-          <div class="card-body">
-            <div class="mb-2">
-              ${video.categorias.split(',').map(cat => `<span class="badge bg-info me-1">${cat}</span>`).join('')}
-            </div>
-            <h5 class="card-title">${video.titulo.length > 60 ? video.titulo.slice(0, 60) + '...' : video.titulo}</h5>
-            <p class="card-text">${video.descripcion && video.descripcion.length > 300 ? video.descripcion.slice(0, 300) + '...' : (video.descripcion || '')}</p>
-            <a href="${video.url}" target="_blank" class="btn btn-sm btn-outline-primary mb-2">Ver video</a>
-            <button class="btn btn-sm btn-warning" onclick="editarVideo(${video.id})">Editar</button>
-            <div id="editForm${video.id}" style="display:none;" class="mt-2">
-              <input type="text" class="form-control mb-1" id="editTitulo${video.id}" value="${video.titulo}">
-              <input type="text" class="form-control mb-1" id="editDescripcion${video.id}" value="${video.descripcion}">
-              <select multiple class="form-select mb-1" id="editCategorias${video.id}">
-                ${categorias.map(cat => `<option value="${cat}" ${video.categorias.split(',').includes(cat) ? 'selected' : ''}>${cat}</option>`).join('')}
-              </select>
-              <button class="btn btn-sm btn-success" onclick="guardarEdicion(${video.id})">Guardar cambios</button>
-            </div>
-          </div>
-        </div>
-      `;
-      videosList.appendChild(col);
-    });
-  }
-
-  form.addEventListener('submit', e => {
-    e.preventDefault();
-    const url = document.getElementById('url').value;
-    const categoriasSeleccionadas = Array.from(categoriasSelect.selectedOptions).map(opt => opt.value);
-    const nuevaCategoria = nuevaCategoriaInput.value.trim();
-    fetch('/agregar_video', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ url, categorias: categoriasSeleccionadas, nueva_categoria: nuevaCategoria })
-    })
-    .then(r => {
-      if (!r.ok) return r.json().then(err => Promise.reject(err));
-      return r.json();
-    })
-    .then(() => {
-      form.reset();
-      cargarCategorias();
-      cargarVideos();
-    })
-    .catch(err => alert(err.detail || 'Error al guardar'));
-  });
-
-  filtroCategoria.addEventListener('change', mostrarVideos);
-
-  toggleFormBtn.addEventListener('click', () => {
-    formVisible = !formVisible;
-    formContainer.style.display = formVisible ? 'block' : 'none';
-    toggleFormBtn.textContent = formVisible ? 'Ocultar formulario' : 'Mostrar formulario';
-  });
-
-  window.editarVideo = function(id) {
-    document.getElementById('editForm'+id).style.display = 'block';
-  };
-
-  window.guardarEdicion = function(id) {
-    const titulo = document.getElementById('editTitulo'+id).value;
-    const descripcion = document.getElementById('editDescripcion'+id).value;
-    const categoriasSeleccionadas = Array.from(document.getElementById('editCategorias'+id).selectedOptions).map(opt => opt.value);
-    fetch(`/editar_video/${id}`, {
-      method: 'PUT',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ titulo, descripcion, categorias: categoriasSeleccionadas })
-    })
-    .then(r => {
-      if (!r.ok) return r.json().then(err => Promise.reject(err));
-      return r.json();
-    })
-    .then(() => {
-      cargarVideos();
-    })
-    .catch(err => alert(err.detail || 'Error al editar'));
-  };
-
-  cargarCategorias();
-  cargarVideos();
-});
+function escHtml(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function toast(msg,tipo){var el=document.createElement('div');el.className='toast-msg'+(tipo==='error'?' error':'');el.textContent=msg;document.getElementById('toast-container').appendChild(el);setTimeout(function(){el.remove();},3000);}
+function setLoading(on){document.getElementById('loadingSpinner').style.display=on?'block':'none';document.getElementById('videosList').style.opacity=on?'0.4':'1';}
+var categorias=[],currentPage=1,LIMIT=20,searchTimeout=null;
+var form=document.getElementById('videoForm'),submitBtn=document.getElementById('submitBtn'),categoriasSelect=document.getElementById('categorias'),nuevaCatInput=document.getElementById('nuevaCategoria'),videosList=document.getElementById('videosList'),filtroCategoria=document.getElementById('filtroCategoria'),searchBar=document.getElementById('searchBar'),formContainer=document.getElementById('formContainer'),toggleFormBtn=document.getElementById('toggleFormBtn'),totalLabel=document.getElementById('totalLabel'),paginationBar=document.getElementById('paginationBar');
+function cargarCategorias(){fetch('/categorias').then(function(r){return r.json();}).then(function(data){categorias=data;categoriasSelect.innerHTML='';filtroCategoria.innerHTML='<option value="">Todas</option>';categorias.forEach(function(cat){var opt=document.createElement('option');opt.value=cat;opt.textContent=cat;categoriasSelect.appendChild(opt);filtroCategoria.appendChild(opt.cloneNode(true));});});}
+function cargarVideos(page){currentPage=page||1;var params=new URLSearchParams({page:currentPage,limit:LIMIT,categoria:filtroCategoria.value,busqueda:searchBar.value.trim()});setLoading(true);fetch('/videos?'+params).then(function(r){return r.json();}).then(function(data){setLoading(false);mostrarVideos(data.videos);renderPaginacion(data.page,data.pages);totalLabel.textContent=data.total+' video'+(data.total!==1?'s':'');}).catch(function(){setLoading(false);toast('Error cargando videos','error');});}
+function mostrarVideos(videos){videosList.innerHTML='';if(!videos.length){videosList.innerHTML='<p class="text-muted text-center mt-4">No se encontraron videos.</p>';return;}videos.forEach(function(video){var col=document.createElement('div');col.className='col-md-6 col-lg-4';var cats=(video.categorias||'').split(',').filter(Boolean).map(function(c){return'<span class="badge bg-info me-1">'+escHtml(c.trim())+'</span>';}).join('');var titulo=escHtml(video.titulo),desc=escHtml(video.descripcion),mini=escHtml(video.miniatura_url),url=escHtml(video.url);var imgHtml=mini?'<img src="'+mini+'" class="card-img-top" loading="lazy" onerror="this.style.display=\'none\'">':'<div class="card-img-top bg-secondary" style="height:120px"></div>';var editCats=categorias.map(function(c){return'<option value="'+escHtml(c)+'"'+((video.categorias||'').split(',').includes(c)?' selected':'')+'>'+escHtml(c)+'</option>';}).join('');col.innerHTML='<div class="card h-100">'+imgHtml+'<div class="card-body"><div class="mb-2">'+cats+'</div><h5 class="card-title">'+(titulo.length>70?titulo.slice(0,70)+'...':titulo)+'</h5><p class="card-text text-muted" style="font-size:0.9em">'+(desc.length>200?desc.slice(0,200)+'...':desc)+'</p><div class="card-footer-actions"><a href="'+url+'" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">Ver video</a><button class="btn btn-sm btn-warning btn-editar" data-id="'+video.id+'">Editar</button><button class="btn btn-sm btn-danger btn-eliminar" data-id="'+video.id+'">Eliminar</button></div><div class="edit-form mt-3" id="editForm'+video.id+'" style="display:none"><input type="text" class="form-control mb-1 edit-titulo" value="'+titulo+'"><textarea class="form-control mb-1 edit-descripcion" rows="2">'+desc+'</textarea><select multiple class="form-select mb-2 edit-cats" size="4">'+editCats+'</select><button class="btn btn-sm btn-success btn-guardar" data-id="'+video.id+'">Guardar</button> <button class="btn btn-sm btn-secondary btn-cancelar" data-id="'+video.id+'">Cancelar</button></div></div></div>';videosList.appendChild(col);});}
+videosList.addEventListener('click',function(e){var btn=e.target.closest('button');if(!btn)return;var id=btn.dataset.id;if(btn.classList.contains('btn-editar')){document.getElementById('editForm'+id).style.display='block';btn.style.display='none';}if(btn.classList.contains('btn-cancelar')){document.getElementById('editForm'+id).style.display='none';btn.closest('.card').querySelector('.btn-editar').style.display='';}if(btn.classList.contains('btn-guardar')){var ef=document.getElementById('editForm'+id);var titulo=ef.querySelector('.edit-titulo').value,desc=ef.querySelector('.edit-descripcion').value,cats=Array.from(ef.querySelector('.edit-cats').selectedOptions).map(function(o){return o.value;});fetch('/videos/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({titulo:titulo,descripcion:desc,categorias:cats})}).then(function(r){if(!r.ok)return r.json().then(function(e){return Promise.reject(e);});return r.json();}).then(function(){toast('Video actualizado');cargarVideos(currentPage);}).catch(function(err){toast((err&&err.detail)||'Error al editar','error');});}if(btn.classList.contains('btn-eliminar')){if(!confirm('Eliminar este video?'))return;fetch('/videos/'+id,{method:'DELETE'}).then(function(r){if(r.status===204||r.ok)return;return r.json().then(function(e){return Promise.reject(e);});}).then(function(){toast('Video eliminado');cargarVideos(currentPage);}).catch(function(err){toast((err&&err.detail)||'Error al eliminar','error');});}});
+function renderPaginacion(page,pages){paginationBar.innerHTML='';if(pages<=1)return;var prev=document.createElement('button');prev.className='btn btn-sm btn-outline-secondary';prev.textContent='Anterior';prev.disabled=page<=1;prev.onclick=function(){cargarVideos(page-1);};var info=document.createElement('span');info.className='page-info';info.textContent='Pagina '+page+' de '+pages;var next=document.createElement('button');next.className='btn btn-sm btn-outline-secondary';next.textContent='Siguiente';next.disabled=page>=pages;next.onclick=function(){cargarVideos(page+1);};paginationBar.append(prev,info,next);}
+form.addEventListener('submit',function(e){e.preventDefault();var url=document.getElementById('url').value.trim(),cats=Array.from(categoriasSelect.selectedOptions).map(function(o){return o.value;}),nuevaCat=nuevaCatInput.value.trim();submitBtn.disabled=true;submitBtn.textContent='Guardando...';fetch('/agregar_video',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:url,categorias:cats,nueva_categoria:nuevaCat})}).then(function(r){if(!r.ok)return r.json().then(function(e){return Promise.reject(e);});return r.json();}).then(function(video){toast('Video guardado: '+(video.titulo||'').slice(0,40));form.reset();cargarCategorias();cargarVideos(1);}).catch(function(err){toast((err&&err.detail)||'Error al guardar','error');}).finally(function(){submitBtn.disabled=false;submitBtn.textContent='Guardar video';});});
+filtroCategoria.addEventListener('change',function(){cargarVideos(1);});
+searchBar.addEventListener('input',function(){clearTimeout(searchTimeout);searchTimeout=setTimeout(function(){cargarVideos(1);},400);});
+var formVisible=true;toggleFormBtn.addEventListener('click',function(){formVisible=!formVisible;formContainer.style.display=formVisible?'block':'none';toggleFormBtn.textContent=formVisible?'Ocultar formulario':'Mostrar formulario';});
+cargarCategorias();cargarVideos(1);

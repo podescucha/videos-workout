@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+.vscode/
+app/videos.db
+app/videos.csv
+.env
+.DS_Store
+*.log

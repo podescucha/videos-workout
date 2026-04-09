@@ -1,43 +1,48 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gestión de Videos Workout</title>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Videos Workout</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="container py-4">
-    <div class="mb-4">
-      <h1 class="mb-2">Videos Workout</h1>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1 class="mb-0">Videos Workout</h1>
+      <button id="toggleFormBtn" class="btn btn-secondary btn-sm">Ocultar formulario</button>
     </div>
-    <button id="toggleFormBtn" class="btn btn-secondary mb-3">Ocultar formulario</button>
     <div id="formContainer">
       <form id="videoForm" class="card p-3 mb-4">
+        <h5 class="mb-3">Agregar video</h5>
         <div class="mb-3">
-          <label for="url" class="form-label">Enlace de video de Facebook</label>
-          <input type="url" class="form-control" id="url" required>
+          <label for="url" class="form-label">Enlace del video</label>
+          <input type="url" class="form-control" id="url" placeholder="https://www.facebook.com/..." required>
+          <div class="form-text">Compatible con Facebook, YouTube, Instagram y mas.</div>
         </div>
-        <div class="mb-3">
-          <label for="categorias" class="form-label">Categorías</label>
-          <select multiple class="form-select" id="categorias"></select>
+        <div class="row g-2">
+          <div class="col-md-6">
+            <label for="categorias" class="form-label">Categorias</label>
+            <select multiple class="form-select" id="categorias" size="4"></select>
+          </div>
+          <div class="col-md-6">
+            <label for="nuevaCategoria" class="form-label">Nueva categoria</label>
+            <input type="text" class="form-control" id="nuevaCategoria" placeholder="Ej: Espalda">
+          </div>
         </div>
-        <div class="mb-3">
-          <label for="nuevaCategoria" class="form-label">Agregar nueva categoría</label>
-          <input type="text" class="form-control" id="nuevaCategoria">
-        </div>
-        <button type="submit" class="btn btn-primary">Guardar</button>
+        <button type="submit" class="btn btn-primary mt-3" id="submitBtn">Guardar video</button>
       </form>
     </div>
-    <div class="mb-3">
-      <label for="filtroCategoria" class="form-label">Filtrar por categoría</label>
-      <select class="form-select" id="filtroCategoria">
-        <option value="">Todas</option>
-      </select>
+    <div class="filtros-bar">
+      <div><label class="form-label mb-1">Buscar</label><input type="text" class="form-control" id="searchBar" placeholder="Titulo o descripcion..."></div>
+      <div><label class="form-label mb-1">Categoria</label><select class="form-select" id="filtroCategoria"><option value="">Todas</option></select></div>
+      <div class="align-self-end"><span class="text-muted" id="totalLabel" style="font-size:0.9em"></span></div>
     </div>
+    <div id="loadingSpinner"><div class="spinner-border text-primary" role="status"></div><p class="text-muted mt-2">Cargando videos...</p></div>
     <div id="videosList" class="row g-3"></div>
+    <div class="pagination-bar" id="paginationBar"></div>
   </div>
+  <div id="toast-container"></div>
   <script src="script.js"></script>
 </body>
 </html>
